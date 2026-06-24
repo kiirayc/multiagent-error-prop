@@ -1,9 +1,0 @@
-pydantic
-pytest
-langgraph
-langchain
-langchain-openai
-openai
-python-dotenv
-pandas
-matplotlib
