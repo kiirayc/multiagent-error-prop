@@ -1,0 +1,29 @@
+{
+  "task_id": "sample_two_sum_001",
+  "title": "Add Two Integers",
+  "difficulty": "easy",
+  "problem_statement": "Given two integers a and b, output their sum.",
+  "input_format": "The input contains two integers separated by a space.",
+  "output_format": "Output a single integer: the sum of a and b.",
+  "constraints": "-10^9 <= a, b <= 10^9",
+  "visible_tests": [
+    {
+      "input": "2 3\n",
+      "output": "5\n"
+    },
+    {
+      "input": "-4 10\n",
+      "output": "6\n"
+    },
+    {
+      "input": "0 0\n",
+      "output": "0\n"
+    }
+  ],
+  "hidden_tests": [
+    {
+      "input": "1000000000 1000000000\n",
+      "output": "2000000000\n"
+    }
+  ]
+}
