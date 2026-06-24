@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -27,7 +28,7 @@ def run_code(
         for index, test in enumerate(tests):
             try:
                 completed = subprocess.run(
-                    ["python", str(code_path)],
+                    [sys.executable, str(code_path)],
                     input=test.input,
                     text=True,
                     capture_output=True,
@@ -88,6 +89,7 @@ def run_code(
         num_failed=len(failures),
         failures=failures,
         timeout=any(f.failure_type == "timeout" for f in failures),
+        # TODO: Give the Reviewer a compact list of all failures for better agent feedback.
         syntax_error=next(
             (f.error for f in failures if f.failure_type == "syntax_error"),
             None,

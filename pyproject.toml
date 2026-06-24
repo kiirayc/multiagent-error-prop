@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multiagent-error-prop"
+version = "0.1.0"
+description = "Experimental pipeline for studying error propagation in multi-agent LLM coding systems."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic",
+    "pytest",
+    "langgraph",
+    "langchain",
+    "langchain-openai",
+    "openai",
+    "python-dotenv",
+    "pandas",
+    "matplotlib",
+]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
