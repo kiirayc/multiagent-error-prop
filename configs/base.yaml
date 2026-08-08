@@ -1,0 +1,55 @@
+# Base experiment config. Everything the run depends on lives here — no experiment
+# parameters are hardcoded in code. Conditions differ ONLY in `condition`.
+
+experiment:
+  name: "supervision-checkpoints"
+  seed: 7
+  # One of: none | plan_gate | final_gate | both
+  # This is the ONLY thing that varies across conditions.
+  condition: "none"
+  trials: 1
+
+model:
+  # o3-mini is a reasoning model. temperature/top_p are NOT supported by the API
+  # for this model family, so we do not send them. We DO hold reasoning_effort
+  # constant across all conditions and log the real settings actually used.
+  provider: "openai"
+  name: "o3-mini"
+  reasoning_effort: "medium"   # low | medium | high — held constant across conditions
+  max_completion_tokens: 32768
+  # Sampling controls that actually exist for this model are detected at runtime
+  # (see mas/llm.py) and the real settings are logged per call.
+
+loop:
+  # Intrinsic execute-and-revise loop (base system; runs under EVERY condition).
+  max_iterations: 6          # global cap on Coder revisions off failing visible tests
+  # Bounded retries for the gates (supervision variable; only active per condition).
+  plan_gate_max_retries: 2
+  final_gate_max_retries: 2
+
+execution:
+  timeout: 6                 # seconds per test, passed to the harness
+  # Per-test invocation: we call the harness once per individual test case so we
+  # recover true passed-count + failing indices despite the harness short-circuit.
+  per_test: true
+
+dataset:
+  release_version: "release_v5"
+  # Contamination filter: keep problems whose contest_date >= this date. o3-mini's
+  # knowledge cutoff is 2023-10-01 (verified against OpenAI's model docs). We start
+  # one month after the cutoff as a small buffer against cutoff imprecision, keeping
+  # the maximal contamination-free pool. Strict-cutoff alternative: "2023-10-01".
+  contamination_start_date: "2023-11-01"
+  contamination_end_date: null
+  # Difficulty filter applied during curation. We study hard problems (more room for
+  # error propagation). Set to null for all difficulties.
+  difficulty: ["hard"]
+  # Explicit task ids to run (question_id). If null, first `max_tasks` after filter.
+  task_ids: null
+  max_tasks: 1               # first milestone: one task end-to-end across 4 conditions
+  # Curated-cache path. If null it is derived from release/difficulty/date, and the
+  # first run curates it once from HuggingFace; subsequent runs read it directly.
+  cache_path: null
+
+logging:
+  dir: "logs"

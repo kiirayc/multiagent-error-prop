@@ -1,0 +1,54 @@
+# iter10, SHARED-START variant. Identical to configs/iter10.yaml in every
+# experiment parameter (model, sampling, iteration cap, tasks, gate caps, dataset
+# pin) — the ONLY differences are operational:
+#
+#   * trials: 1                 (shared start removes generation variance; 1 is enough)
+#   * logging.dir: iter10_shared (keeps the original iter10 logs intact)
+#
+# Run with `python -m mas.batch_shared` (NOT mas.batch): for each task it generates
+# one plan + one initial code with gates OFF, then runs all 4 conditions from that
+# identical warm start. Gate presence remains the sole cross-condition variable.
+
+experiment:
+  name: "supervision-checkpoints-iter10-shared"
+  seed: 7
+  condition: "none"            # overridden per-condition by the batch sweep
+  trials: 1
+
+model:
+  provider: "openai"
+  name: "o3-mini"
+  reasoning_effort: "low"      # weaker first attempts -> more defects to study
+  max_completion_tokens: 32768
+
+loop:
+  max_iterations: 6
+  plan_gate_max_retries: 2
+  final_gate_max_retries: 2
+
+execution:
+  timeout: 6
+  per_test: true
+
+dataset:
+  release_version: "release_v5"
+  contamination_start_date: "2023-11-01"   # o3-mini cutoff 2023-10-01 + 1mo buffer
+  contamination_end_date: null
+  difficulty: ["hard"]
+  # Pinned iteration set (same as iter10). When task_ids is set, max_tasks is ignored.
+  task_ids:
+    - "3552"        # find-the-largest-palindrome-divisible-by-k   (LeetCode, 3 pub / 40 priv)
+    - "3550"        # maximum-value-sum-by-placing-three-rooks      (LeetCode, 3 pub / 40 priv)
+    - "3548"        # find-the-count-of-good-integers               (LeetCode, 3 pub / 40 priv)
+    - "3580"        # find-the-occurrence-of-first-almost-equal     (LeetCode, 4 pub / 40 priv)
+    - "3608"        # find-the-number-of-subsequences-with-equal    (LeetCode, 3 pub / 40 priv)
+    - "abc374_e"    # Sensor Optimization Dilemma 2                 (AtCoder,  4 pub / 40 priv)
+    - "abc375_e"    # 3 Team Division                               (AtCoder,  4 pub / 48 priv)
+    - "abc377_e"    # Permute K times 2                             (AtCoder,  3 pub / 47 priv)
+    - "abc384_f"    # Double Sum 2                                  (AtCoder,  3 pub / 40 priv)
+    - "arc185_c"    # Sum of Three Integers                         (AtCoder,  3 pub / 40 priv)
+  max_tasks: 10                # ignored while task_ids is set; documents intended size
+  cache_path: null             # reuses curated_release_v5_hard_from-2023-11-01.jsonl
+
+logging:
+  dir: "logs/iter10_shared"    # separate dir so this variant never mixes with iter10

@@ -1,0 +1,43 @@
+# Error-propagation run config. Same design as configs/base.yaml; differs ONLY in
+# the knobs that raise the natural defect rate + add statistical volume, plus a
+# separate log dir. Held-constant controls (model family, prompts, caps, timeout,
+# dataset window) are IDENTICAL to base so the only cross-condition variable stays
+# gate presence.
+#
+# Scale: max_tasks(20) x conditions(4) x trials(3) = 240 episodes.
+
+experiment:
+  name: "supervision-checkpoints-propagation"
+  seed: 7
+  condition: "none"            # overridden per-condition by the batch sweep
+  trials: 3                    # volume: 3 trials/condition to average out sampling noise
+
+model:
+  provider: "openai"
+  name: "o3-mini"
+  # low (was medium): weaker first attempts -> more initial defects to propagate.
+  # Held constant across ALL conditions and roles, as required.
+  reasoning_effort: "low"
+  max_completion_tokens: 32768
+
+loop:
+  # Unchanged from base — kept identical so effort/volume are the only new variables.
+  max_iterations: 6
+  plan_gate_max_retries: 2
+  final_gate_max_retries: 2
+
+execution:
+  timeout: 6
+  per_test: true
+
+dataset:
+  release_version: "release_v5"
+  contamination_start_date: "2023-11-01"   # o3-mini cutoff 2023-10-01 + 1mo buffer
+  contamination_end_date: null
+  difficulty: ["hard"]
+  task_ids: null
+  max_tasks: 20              # first 20 hard problems from the curated cache
+  cache_path: null           # reuses the existing curated_release_v5_hard_from-2023-11-01.jsonl
+
+logging:
+  dir: "logs/propagation"    # separate dir so this run never mixes with the milestone
