@@ -1,0 +1,12 @@
+# Our multi-agent stack
+langgraph>=0.2.0
+langchain-core>=0.3.0
+openai>=1.59.6
+pyyaml>=6.0
+
+# LiveCodeBench harness runtime deps (subset — we deliberately skip torch/vllm/etc.)
+# datasets is pinned to 3.2.0: LiveCodeBench's `code_generation_lite` uses a HF
+# loading script, and datasets>=4.0 removed loading-script / trust_remote_code
+# support. 3.2.0 is the last line that loads the dataset as upstream intends.
+datasets==3.2.0
+numpy>=1.26
