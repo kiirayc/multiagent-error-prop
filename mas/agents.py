@@ -99,9 +99,15 @@ def format_test_feedback(result: TestSetResult, tests: list, max_examples: int =
         f"Failing test indices: {result.failing_indices}.",
     ]
     if result.first_failure_metadata:
-        msg = result.first_failure_metadata.get("error_message")
-        if msg:
-            lines.append(f"First failure: {msg}")
+        meta = result.first_failure_metadata
+        # Prefer the harness's detailed exception (`error` == repr(e), e.g.
+        # "AttributeError(\"'numpy.int64' object has no attribute 'bit_length'\")")
+        # over the generic category label (`error_message` is a constant like
+        # "Runtime Error"). Without this the Coder revises blind to the actual
+        # exception. `error` is absent for wrong-answer cases, so we fall back.
+        detail = meta.get("error") or meta.get("error_message")
+        if detail:
+            lines.append(f"First failure: {detail}")
     shown = 0
     for idx in result.failing_indices:
         if shown >= max_examples:
