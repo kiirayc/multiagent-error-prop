@@ -9,7 +9,7 @@ Three roles:
 
 from __future__ import annotations
 
-PROMPT_VERSION = "v2"
+PROMPT_VERSION = "v3"
 
 # ---------------------------------------------------------------------------
 # Planner
@@ -77,6 +77,11 @@ CODER_USER_REVISE = """Your previous solution failed some visible tests. Revise 
 
 Problem title: {title}
 
+Problem statement:
+{content}
+
+Input/output format: {io_format}
+{starter}
 Algorithmic plan:
 {plan}
 
@@ -112,10 +117,21 @@ def coder_initial_messages(problem, plan: str) -> list:
 
 
 def coder_revise_messages(problem, plan: str, prev_code: str, feedback: str) -> list:
+    io_format = (
+        f"Call-based: implement the function `{problem.fn_name}`."
+        if problem.is_call_based
+        else "Standard input/output (read from stdin, write to stdout)."
+    )
+    starter = (
+        f"\nStarter code to complete:\n```python\n{problem.starter_code}\n```\n"
+        if problem.starter_code.strip()
+        else ""
+    )
     return [
         {"role": "system", "content": CODER_SYSTEM},
         {"role": "user", "content": CODER_USER_REVISE.format(
-            title=problem.title, plan=plan, prev_code=prev_code, feedback=feedback)},
+            title=problem.title, content=problem.content, io_format=io_format,
+            starter=starter, plan=plan, prev_code=prev_code, feedback=feedback)},
     ]
 
 
