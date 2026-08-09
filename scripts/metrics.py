@@ -71,11 +71,13 @@ def episode_metrics(ep) -> dict:
         if first_err is not None:
             m["recovered"] = _recovered(history)
             # Propagation depth: iterations from first error to recovery (or end).
+            # number of failing tests in first_err
             first_err_fail = next(
                 r["num_failing"] for r in history if r["iteration"] == first_err)
             final_fail = history[-1].get("num_failing", 0)
             m["error_magnitude"] = first_err_fail - final_fail
             if m["recovered"]:
+                # Find the first non-error iteration occurring at or after the first error
                 rec_idx = next(
                     r["iteration"] for r in history if not r["in_error_state"]
                     and r["iteration"] >= first_err)
@@ -91,8 +93,8 @@ def episode_metrics(ep) -> dict:
 
 
 def _safe_mean(vals):
-    vals = [v for v in vals if v is not None]
-    return round(mean(vals), 4) if vals else None
+    vals = [v for v in vals if v is not None]       # remove None
+    return round(mean(vals), 4) if vals else None   # rounds to two decimal places
 
 
 def aggregate(per_ep: list) -> dict:
@@ -118,7 +120,7 @@ def aggregate(per_ep: list) -> dict:
     # Mean visible failing-count trajectory across iteration indices.
     traj = defaultdict(list)
     for m in per_ep:
-        for it, nf in m["failing_by_iter"].items():
+        for it, nf in m["failing_by_iter"].items():  # iteration, number of failure
             traj[int(it)].append(nf)
     agg["failing_trajectory"] = {
         str(it): round(mean(v), 3) for it, v in sorted(traj.items())}
@@ -130,7 +132,7 @@ def group_and_aggregate(per_ep: list, by_difficulty: bool) -> dict:
     for m in per_ep:
         key = m["condition"]
         if by_difficulty:
-            key = f"{m['condition']}::{m['difficulty']}"
+            key = f"{m['condition']}::{m['difficulty']}"   # e.g., none::hard
         groups[key].append(m)
     return {k: aggregate(v) for k, v in sorted(groups.items())}
 
