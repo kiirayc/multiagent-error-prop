@@ -28,6 +28,32 @@ from typing import Optional
 from .config import DatasetConfig
 
 
+# ---------------------------------------------------------------------------
+# Special-judge exclusions
+# ---------------------------------------------------------------------------
+# LiveCodeBench grades by EXACT-MATCH against a single stored expected output
+# (`grade_stdio` line-compare / `grade_call_based` `==`). It has no special-judge
+# / checker hook — the `Test` schema is just (input, output, testtype). Problems
+# whose statement permits MULTIPLE valid outputs ("print any of them") therefore
+# get false-negative "wrong answer" verdicts whenever a correct solution emits a
+# valid-but-different answer than the one stored. That noise is decided by the
+# model's tie-breaking, which the supervision conditions can shift — so it
+# confounds the independent variable. We drop these problems at curation.
+#
+# Each id was confirmed by reading the statement's output contract (not a keyword
+# match): the quoted phrase is the sentence that establishes output multiplicity.
+# Keep this list explicit and versioned so every exclusion is auditable.
+SPECIAL_JUDGE_EXCLUSIONS: dict = {
+    "abc333_e": 'output any min-K action sequence — "you may print any of them"',
+    "abc343_e": '"If multiple solutions exist, you may print any of them."',
+    "abc366_g": '"If multiple solutions exist, any of them will be accepted."',
+    "abc373_g": '"If there are multiple solutions, you may print any of them."',
+    "arc181_c": '"If there are multiple ways to satisfy the conditions, any ... accepted."',
+    "arc183_d": '"If there are multiple solutions, you may print any of them."',
+    "arc185_c": '"If there are multiple solutions, you may print any of them."',
+}
+
+
 @dataclass
 class TestCase:
     input: str
@@ -128,6 +154,15 @@ def curate(cfg: DatasetConfig, out_path: Optional[str] = None) -> list[ProblemVi
     print(f"[curate] {len(kept_rows)} problems pass difficulty/date filter "
           f"(of {len(raw)} total)")
 
+    # Drop special-judge problems the exact-match harness cannot judge soundly.
+    excluded = [r for r in kept_rows if r["question_id"] in SPECIAL_JUDGE_EXCLUSIONS]
+    kept_rows = [r for r in kept_rows if r["question_id"] not in SPECIAL_JUDGE_EXCLUSIONS]
+    if excluded:
+        print(f"[curate] excluded {len(excluded)} special-judge problem(s) "
+              f"(multiple valid outputs, unjudgeable by exact-match):")
+        for r in excluded:
+            print(f"           - {r['question_id']}: {SPECIAL_JUDGE_EXCLUSIONS[r['question_id']]}")
+
     problems = [CodeGenerationProblem(**row) for row in kept_rows]
     views = [_view_from_problem(p) for p in problems]
 
@@ -175,6 +210,10 @@ def load_problems(cfg: DatasetConfig, auto_curate: bool = True) -> list[ProblemV
                 continue
             # Cheap id peek to avoid materializing tests for problems we skip.
             d = json.loads(line)
+            # Guard against a stale cache curated before the special-judge exclusions
+            # existed: never surface an unjudgeable problem to the run loop.
+            if d["question_id"] in SPECIAL_JUDGE_EXCLUSIONS:
+                continue
             if wanted is not None:
                 if d["question_id"] in wanted:
                     views.append(_view_from_cache(d))
